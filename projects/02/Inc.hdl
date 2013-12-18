@@ -1,0 +1,17 @@
+
+
+ //out = (s * in) + (not s * not in)
+ //s   = not (in * not s)
+
+CHIP Inc {
+	IN in, s;
+	OUT out, sout;
+	PARTS:
+	Not(in=s, out=nots);
+	Not(in=in, out=notin);
+	And(a=s, b=in, out=sin);
+	And(a=nots, b=notin, out=notsnotin);
+	And(a=in, b=nots, out=innots);
+	Or(a=sin, b=notsnotin, out=out);
+	Not(in=innots, out=sout);
+}

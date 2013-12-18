@@ -1,0 +1,35 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/02/Inc16.hdl
+
+/**
+ * 16-bit incrementer.  out = in + 1 (16-bit addition).
+ * Overflow is neither detected nor handled.
+ */
+
+
+CHIP Inc16 {
+    IN in[16];
+    OUT out[16];
+    PARTS:
+    Xor(a=in[0], b=in[0], out=zero);
+
+    Inc(in=in[0] , s=zero , sout=s0  , out=out[0] );    
+    Inc(in=in[1] , s=s0   , sout=s1  , out=out[1] );   
+    Inc(in=in[2] , s=s1   , sout=s2  , out=out[2] );   
+    Inc(in=in[3] , s=s2   , sout=s3  , out=out[3] );   
+    Inc(in=in[4] , s=s3   , sout=s4  , out=out[4] );   
+    Inc(in=in[5] , s=s4   , sout=s5  , out=out[5] );   
+    Inc(in=in[6] , s=s5   , sout=s6  , out=out[6] );   
+    Inc(in=in[7] , s=s6   , sout=s7  , out=out[7] );
+    Inc(in=in[8] , s=s7   , sout=s8  , out=out[8] );
+    Inc(in=in[9] , s=s8   , sout=s9  , out=out[9] ); 
+    Inc(in=in[10], s=s9   , sout=s10 , out=out[10]); 
+    Inc(in=in[11], s=s10  , sout=s11 , out=out[11]); 
+    Inc(in=in[12], s=s11  , sout=s12 , out=out[12]); 
+    Inc(in=in[13], s=s12  , sout=s13 , out=out[13]); 
+    Inc(in=in[14], s=s13  , sout=s14 , out=out[14]); 
+    Inc(in=in[15], s=s14  , sout=s15 , out=out[15]);
+
+}
