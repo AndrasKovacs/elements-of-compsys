@@ -77,11 +77,14 @@ rhs = sortCmds [
     ("-M",  "1110011"),
     ("M+1", "1110111"),
     ("M-1", "1110010"),
+    ("M+D", "1000010"),
     ("D+M", "1000010"),
     ("D-M", "1010011"),
     ("M-D", "1000111"), 
     ("D&M", "1000000"), 
-    ("D|M", "1010101")]
+    ("M&D", "1000000"), 
+    ("D|M", "1010101"),
+    ("M|D", "1010101")]
 
 data Asm = C String | AImmediate String | ASymbol String | Label String deriving (Eq, Show)
 
