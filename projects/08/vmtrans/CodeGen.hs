@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleInstances #-}
 
 module CodeGen (
-    Gen, catGens,
+    Gen, catGens, evalGen,
     __eq, __gt, __lt,
     __add, __sub, __or,
     __and, __neg, __not,
@@ -10,7 +9,7 @@ module CodeGen (
     __call_function, __return,
     call_0, call_1, call_2,
     push_const, 
-    goto, goto_if, label,
+    goto, goto_if, function_label, label, 
     init_all) where
 
 
@@ -41,7 +40,10 @@ newLabel :: Gen String
 newLabel = (printf "__%d" <$> get) <* modify (+1)
 
 catGens :: [Gen String] -> Gen String
-catGens = (unlines <$>) . sequence
+catGens = (unlines . filter (not . null) <$>) . sequence
+
+evalGen :: Gen a -> a
+evalGen = (`evalState` 0)
 
 
 -- ******************** initialization ***********************
@@ -70,7 +72,7 @@ init_all = catGens [
     init_sp, 
     goto entry, 
     init_fn,
-    pure "//*** end of init ***"]
+    pure "//****************** start of text ******************"]
 
 
 
@@ -219,6 +221,14 @@ __call_function = pure $ unlines [
 __return :: Gen String  -- PRIMOPS
 __return = pure $ unlines [
     "(__return)",
+    "@5", -- 14 = *(LCL - 5)
+    "D=A",
+    "@LCL",
+    "A=M-D",
+    "D=M",
+    "@14",
+    "M=D",
+
     "@SP", -- *ARG = *(SP - 1)
     "A=M-1",
     "D=M",
@@ -226,51 +236,44 @@ __return = pure $ unlines [
     "A=M",
     "M=D",
 
-    "@LCL", -- SP = LCL
-    "D=M",
-    "@SP",
-    "M=D",
-
-    "A=M", -- pop that
-    "D=M",
-    "@4",
-    "M=D",
-    "@SP",
-    "M=M-1",
-
-    "A=M", -- pop this
-    "D=M",
-    "@3",
-    "M=D",
-    "@SP",
-    "M=M-1",
-
-    "A=M", -- pop arg
-    "D=M",
-    "@2",
-    "M=D",
-    "@SP",
-    "M=M-1",
-
-    "A=M", --  pop lcl
-    "D=M",
-    "@1",
-    "M=D",
-    "@SP",
-    "M=M-1",
-
-    "A=M", --  pop ret to 13
-    "D=M",
-    "@13",
-    "M=D",
-
-    "@ARG", -- SP = ARG + 1
+    "@ARG",  -- SP = ARG + 1
     "D=M+1",
     "@SP",
     "M=D",
 
-    "@13", -- return 
-    "A=M",
+    "@LCL", -- 13 = LCL
+    "D=M",
+    "@13",
+
+    "M=D-1", -- pop that
+    "A=M", 
+    "D=M",
+    "@THAT",
+    "M=D",
+
+    "@13", -- pop this
+    "M=M-1",
+    "A=M", 
+    "D=M",
+    "@THIS",
+    "M=D",
+
+    "@13", -- pop arg
+    "M=M-1",
+    "A=M", 
+    "D=M",
+    "@ARG",
+    "M=D",
+
+    "@13", --  pop lcl
+    "M=M-1",
+    "A=M", 
+    "D=M",
+    "@LCL",
+    "M=D",
+
+    "@14", -- return
+    "A=M", 
     "0;JMP"]
 
 
@@ -280,7 +283,7 @@ __return = pure $ unlines [
 -- binops, cmp, unops
 call_0 :: String -> Gen String
 call_0 fun = do
-    ret <- newLabel
+    ret <- ("__RET"++) <$> newLabel
     pure $ unlines [
         printf "@%s"    ret,
                "D=A", 
@@ -293,7 +296,7 @@ call_0 fun = do
 -- push/pop static, pointer, temp
 call_1 :: String -> String -> Gen String
 call_1 arg fun = do
-    ret <- newLabel
+    ret <- ("__RET"++) <$> newLabel
     pure $ unlines [
         printf "@%s"    ret,
                "D=A", 
@@ -310,7 +313,7 @@ call_1 arg fun = do
 -- push/pop argument, local, this, that
 call_2 :: String -> String -> String -> Gen String
 call_2 arg offset fun = do
-    ret <- newLabel
+    ret <- ("__RET"++) <$> newLabel
     pure $ unlines [
         printf "@%s"    ret,
                "D=A", 
@@ -338,11 +341,11 @@ push_const cons = pure $ unlines [
     "@SP",
     "M=M+1"]
 
-func_label :: String -> Int -> Gen String
-func_label name n = catGens $ (pure $ printf "(%s)" name) : replicate n (push_const "0")
-
 label :: String -> Gen String
 label = pure . printf "(%s)\n"
+
+function_label :: String -> Int -> Gen String
+function_label name n = catGens $ (label name) : replicate n (push_const "0")
 
 goto :: String -> Gen String
 goto dest = pure $ unlines [
@@ -352,7 +355,7 @@ goto dest = pure $ unlines [
 goto_if :: String -> Gen String
 goto_if dest = pure $ unlines [
     "@SP",
-    "A=M",
+    "A=M-1",
     "D=M",
     printf "@%s" dest,
     "D;JNE"]
