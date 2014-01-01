@@ -1,0 +1,13 @@
+
+
+class test {
+    field int a;
+    method void foo(){
+        return;
+    }
+    method void bar(){
+        var test a;
+        do foo();
+        return;
+    }
+}

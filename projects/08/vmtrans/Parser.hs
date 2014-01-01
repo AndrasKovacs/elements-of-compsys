@@ -18,7 +18,6 @@ import CodeGen
 
 type Parsy m = (Monad m, TokenParsing m)
 
-
 identStyle :: CharParsing m => IdentifierStyle m 
 identStyle = IdentifierStyle {
     _styleName      = "identifierStyle", 
@@ -32,28 +31,22 @@ identStyle = IdentifierStyle {
     _styleHighlight         = Identifier,
     _styleReservedHighlight = ReservedIdentifier}
 
-
 pLineOf :: Parsy m => m a -> m (Maybe a)
 pLineOf p = whiteSpace *> ((Nothing <$ newline) <|> (Just <$> (p <* newline)))
-
 
 pKeyword :: Parsy m => String -> m String
 pKeyword kw = (kw <$ reserve identStyle kw) 
 
-
 pLabelSymbol :: Parsy m => m String
 pLabelSymbol = ident identStyle 
-
 
 pLabel, pGoto, pGotoIf :: Parsy m => String -> m (Gen String)
 pLabel  fn  = label   . ((fn++"$")++) <$> (pKeyword "label"   *> pLabelSymbol) 
 pGoto   fn  = goto    . ((fn++"$")++) <$> (pKeyword "goto"    *> pLabelSymbol)
 pGotoIf fn  = goto_if . ((fn++"$")++) <$> (pKeyword "if-goto" *> pLabelSymbol)
 
-
 pReturn :: Parsy m => m (Gen String)
-pReturn = goto "__return" <$ pKeyword "return" <?> "return"
-
+pReturn = goto "__return" <$ pKeyword "return"
 
 pCall :: Parsy m => m (Gen String)
 pCall = do 
@@ -62,11 +55,9 @@ pCall = do
     n <- show <$> natural
     pure $ call_2 n f "__call_function" 
 
-
 pPrimOp :: Parsy m => m (Gen String)
 pPrimOp = call_0 . ("__"++) <$> choice (map pKeyword primops)
     where primops = ["add", "sub", "eq", "gt", "lt", "and", "neg", "not", "or"]
-
 
 segmentBases :: HM.HashMap String Int
 segmentBases = HM.fromList [
@@ -77,7 +68,6 @@ segmentBases = HM.fromList [
     ("local",       1),
     ("this",        3),
     ("that",        4)]
-
 
 pStackOp :: Parsy m => m (Gen String)
 pStackOp = do
@@ -93,7 +83,6 @@ pStackOp = do
                 call_2 (show $ segmentBases HM.! seg) (show offset) ("__" ++ op ++ "_dynamic")
     pure res 
 
-
 pIns :: Parsy m => String -> m (Gen String)
 pIns fn = choice [
     try pStackOp,
@@ -103,7 +92,6 @@ pIns fn = choice [
     pCall,
     pReturn,
     pLabel fn]
-
 
 pFunction :: Parsy m => m (Gen String)
 pFunction = do 
@@ -116,10 +104,8 @@ pFunction = do
             pure $ catGens $ function_label fn n : body)
         fnLine
 
-
 parser :: Parsy m => Parser m (Gen String)
 parser = (catGens <$> many pFunction) <* eof
-
 
 parseFile :: String -> IO (Gen String)
 parseFile file = do
